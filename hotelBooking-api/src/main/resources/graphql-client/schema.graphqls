@@ -1,0 +1,112 @@
+type Hotel {
+    id:ID!
+    hotelName: String!
+    grade: Int
+    address: String
+    rooms: [Room]
+}
+
+type Room {
+    id: ID!
+    hotel: Hotel
+    area: Float
+    floor: Int!
+    numberRoom: String!
+    roomPhotoUrl: [String]
+    books: [BookRoom]
+}
+
+
+type BookRoom {
+    id: ID
+    roomId: ID
+    hotelId: ID
+    numberDocument: String
+    userName: String!
+    userSurname: String!
+    userNumber: String!
+    userCountry: String!
+    from: String!
+    to: String!
+    bookedAt: String!
+}
+
+type UnbookRoom {
+    bookingId: ID!
+}
+
+type RoomPage {
+    content: [Room]!
+    page: Int
+    size: Int
+    totalElements: Int
+    totalPages: Int
+    last: Boolean
+}
+type BookRoomPage {
+    content: [BookRoom]!
+    page: Int
+    size: Int
+    totalElements: Int
+    totalPages: Int
+    last: Boolean
+}
+
+type Query {
+    hotels: [Hotel]
+    hotelById(id: ID!,gradeFilter: Int, addressFilter: String ): Hotel
+
+    rooms(hotelId: ID, page: Int = 0, size: Int = 10, areaFilter: String): RoomPage
+    roomById(id: ID!): Room
+
+    bookings(roomId: ID, documentNumber: String, page: Int = 0, size: Int = 10): BookRoomPage
+}
+
+input HotelInput {
+    hotelName: String!
+    address: String
+    grade: String
+}
+
+input RoomInput {
+    hotelId: String!
+    area: String!
+    floor: Int!
+    numberRoom: String!
+    roomPhotoUrl: [String]
+}
+
+input UpdateRoomInput {
+    area: String
+    floor: Int
+    numberRoom: String
+    roomPhotoUrl: [String]
+}
+
+input BookRoomInput {
+    roomId: String!
+    userName: String!
+    userSurname: String!
+    userNumber: String!
+    documentNumber: String!
+    userCountry: String!
+    dateFrom: String!
+    dateTo: String!
+}
+
+input UnbookRoomInput {
+    bookingId: String!
+}
+
+type Mutation {
+    createHotel(input: HotelInput!): Hotel
+    updateHotel(id: ID!, input: HotelInput!): Hotel
+    deleteHotel(id: ID!): Boolean
+
+    createRoom(input: RoomInput!): Room
+    updateRoom(id: ID!, input: UpdateRoomInput!): Room
+    deleteRoom(id: ID!): Boolean
+
+    bookRoom(input: BookRoomInput!): BookRoom
+    unbookRoom(input: UnbookRoomInput!): UnbookRoom
+}

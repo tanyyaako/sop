@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="events-roomBooking-contract:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/events_roomBooking_contract_jar</output-path>
+    <root id="archive" name="events-roomBooking-contract.jar">
+      <element id="module-output" name="events-roomBooking-contract" />
+    </root>
+  </artifact>
+</component>
