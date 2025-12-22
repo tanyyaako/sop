@@ -7,11 +7,21 @@ COPY lib /app/lib
 COPY pom.xml .
 COPY src ./src
 
+# Устанавливаем локальные зависимости в Maven репозиторий
+RUN mvn install:install-file \
+    -Dfile=/app/lib/events-roomBooking-contract.jar \
+    -DgroupId=org.example \
+    -DartifactId=events-roomBooking-contract \
+    -Dversion=1.0-SNAPSHOT \
+    -Dpackaging=jar || true
+
+# Собираем проект
+RUN mvn clean package -DskipTests
+
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
-# ARG позволяет передать имя файла при сборке
-ARG JAR_FILE=target/*.jar
-COPY ${JAR_FILE} app.jar
+# Копируем JAR из этапа сборки
+COPY --from=build /app/target/*.jar app.jar
 # Указываем порт, на котором работает приложение
 EXPOSE 8083
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
