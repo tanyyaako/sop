@@ -168,16 +168,17 @@ pipeline {
                         dir('pricing-service') {
                             script {
                                 echo "Building pricing-service Docker image..."
-                                if (isUnix()) {
-                                    sh 'docker build -t bookings/pricing-service:latest .' || {
-                                        error("Failed to build pricing-service image")
+                                try {
+                                    if (isUnix()) {
+                                        sh 'docker build -t bookings/pricing-service:latest .'
+                                    } else {
+                                        bat 'docker build -t bookings/pricing-service:latest .'
                                     }
-                                } else {
-                                    bat 'docker build -t bookings/pricing-service:latest .' || {
-                                        error("Failed to build pricing-service image")
-                                    }
+                                    echo "✓ pricing-service image built successfully"
+                                } catch (Exception e) {
+                                    echo "✗ Failed to build pricing-service image: ${e.getMessage()}"
+                                    throw e
                                 }
-                                echo "✓ pricing-service image built successfully"
                             }
                         }
                     }
@@ -187,16 +188,17 @@ pipeline {
                         dir('audit-booking-service') {
                             script {
                                 echo "Building audit-booking-service Docker image..."
-                                if (isUnix()) {
-                                    sh 'docker build -t bookings/audit-booking-service:latest .' || {
-                                        error("Failed to build audit-booking-service image")
+                                try {
+                                    if (isUnix()) {
+                                        sh 'docker build -t bookings/audit-booking-service:latest .'
+                                    } else {
+                                        bat 'docker build -t bookings/audit-booking-service:latest .'
                                     }
-                                } else {
-                                    bat 'docker build -t bookings/audit-booking-service:latest .' || {
-                                        error("Failed to build audit-booking-service image")
-                                    }
+                                    echo "✓ audit-booking-service image built successfully"
+                                } catch (Exception e) {
+                                    echo "✗ Failed to build audit-booking-service image: ${e.getMessage()}"
+                                    throw e
                                 }
-                                echo "✓ audit-booking-service image built successfully"
                             }
                         }
                     }
@@ -206,16 +208,17 @@ pipeline {
                         dir('notification-service') {
                             script {
                                 echo "Building notification-service Docker image..."
-                                if (isUnix()) {
-                                    sh 'docker build -t bookings/notification-service:latest .' || {
-                                        error("Failed to build notification-service image")
+                                try {
+                                    if (isUnix()) {
+                                        sh 'docker build -t bookings/notification-service:latest .'
+                                    } else {
+                                        bat 'docker build -t bookings/notification-service:latest .'
                                     }
-                                } else {
-                                    bat 'docker build -t bookings/notification-service:latest .' || {
-                                        error("Failed to build notification-service image")
-                                    }
+                                    echo "✓ notification-service image built successfully"
+                                } catch (Exception e) {
+                                    echo "✗ Failed to build notification-service image: ${e.getMessage()}"
+                                    throw e
                                 }
-                                echo "✓ notification-service image built successfully"
                             }
                         }
                     }
@@ -225,34 +228,35 @@ pipeline {
                         dir('roomBooking') {
                             script {
                                 echo "Building roomBooking Docker image..."
-                                // Проверяем, что JAR файлы есть в lib/
-                                if (isUnix()) {
-                                    sh '''
-                                        if [ ! -f lib/hotelBooking-api.jar ] || [ ! -f lib/events-roomBooking-contract.jar ]; then
-                                            echo "ERROR: Required JAR files not found in lib/"
-                                            echo "Expected: lib/hotelBooking-api.jar and lib/events-roomBooking-contract.jar"
-                                            exit 1
-                                        fi
-                                        docker build -t bookings/room-booking:latest .
-                                    ''' || {
-                                        error("Failed to build roomBooking image")
+                                try {
+                                    // Проверяем, что JAR файлы есть в lib/
+                                    if (isUnix()) {
+                                        sh '''
+                                            if [ ! -f lib/hotelBooking-api.jar ] || [ ! -f lib/events-roomBooking-contract.jar ]; then
+                                                echo "ERROR: Required JAR files not found in lib/"
+                                                echo "Expected: lib/hotelBooking-api.jar and lib/events-roomBooking-contract.jar"
+                                                exit 1
+                                            fi
+                                        '''
+                                        sh 'docker build -t bookings/room-booking:latest .'
+                                    } else {
+                                        bat '''
+                                            if not exist lib\\hotelBooking-api.jar (
+                                                echo ERROR: Required JAR files not found in lib/
+                                                exit /b 1
+                                            )
+                                            if not exist lib\\events-roomBooking-contract.jar (
+                                                echo ERROR: Required JAR files not found in lib/
+                                                exit /b 1
+                                            )
+                                        '''
+                                        bat 'docker build -t bookings/room-booking:latest .'
                                     }
-                                } else {
-                                    bat '''
-                                        if not exist lib\\hotelBooking-api.jar (
-                                            echo ERROR: Required JAR files not found in lib/
-                                            exit /b 1
-                                        )
-                                        if not exist lib\\events-roomBooking-contract.jar (
-                                            echo ERROR: Required JAR files not found in lib/
-                                            exit /b 1
-                                        )
-                                        docker build -t bookings/room-booking:latest .
-                                    ''' || {
-                                        error("Failed to build roomBooking image")
-                                    }
+                                    echo "✓ roomBooking image built successfully"
+                                } catch (Exception e) {
+                                    echo "✗ Failed to build roomBooking image: ${e.getMessage()}"
+                                    throw e
                                 }
-                                echo "✓ roomBooking image built successfully"
                             }
                         }
                     }
