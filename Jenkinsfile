@@ -162,30 +162,77 @@ pipeline {
         }
         
         stage('Build Docker Images') {
-            steps {
-                script {
-                    try {
-                        echo 'Building Docker images with docker-compose...'
-                        if (isUnix()) {
-                            // Пробуем docker compose (новый синтаксис) или docker-compose (старый)
-                            sh '''
-                                if command -v docker-compose &> /dev/null; then
-                                    docker-compose build --no-cache
-                                elif docker compose version &> /dev/null; then
-                                    docker compose build --no-cache
-                                else
-                                    echo "Neither docker-compose nor docker compose found"
-                                    exit 1
-                                fi
-                            '''
-                        } else {
-                            bat '''
-                                docker-compose build --no-cache || docker compose build --no-cache
-                            '''
+            parallel failFast: false, {
+                stage('Build pricing-service image') {
+                    steps {
+                        dir('pricing-service') {
+                            script {
+                                try {
+                                    if (isUnix()) {
+                                        sh 'docker build -t bookings/pricing-service:latest .'
+                                    } else {
+                                        bat 'docker build -t bookings/pricing-service:latest .'
+                                    }
+                                } catch (Exception e) {
+                                    echo "Failed to build pricing-service image: ${e.getMessage()}"
+                                    throw e
+                                }
+                            }
                         }
-                    } catch (Exception e) {
-                        echo "Failed to build Docker images: ${e.getMessage()}"
-                        throw e
+                    }
+                }
+                stage('Build audit-booking-service image') {
+                    steps {
+                        dir('audit-booking-service') {
+                            script {
+                                try {
+                                    if (isUnix()) {
+                                        sh 'docker build -t bookings/audit-booking-service:latest .'
+                                    } else {
+                                        bat 'docker build -t bookings/audit-booking-service:latest .'
+                                    }
+                                } catch (Exception e) {
+                                    echo "Failed to build audit-booking-service image: ${e.getMessage()}"
+                                    throw e
+                                }
+                            }
+                        }
+                    }
+                }
+                stage('Build notification-service image') {
+                    steps {
+                        dir('notification-service') {
+                            script {
+                                try {
+                                    if (isUnix()) {
+                                        sh 'docker build -t bookings/notification-service:latest .'
+                                    } else {
+                                        bat 'docker build -t bookings/notification-service:latest .'
+                                    }
+                                } catch (Exception e) {
+                                    echo "Failed to build notification-service image: ${e.getMessage()}"
+                                    throw e
+                                }
+                            }
+                        }
+                    }
+                }
+                stage('Build roomBooking image') {
+                    steps {
+                        dir('roomBooking') {
+                            script {
+                                try {
+                                    if (isUnix()) {
+                                        sh 'docker build -t bookings/room-booking:latest .'
+                                    } else {
+                                        bat 'docker build -t bookings/room-booking:latest .'
+                                    }
+                                } catch (Exception e) {
+                                    echo "Failed to build roomBooking image: ${e.getMessage()}"
+                                    throw e
+                                }
+                            }
+                        }
                     }
                 }
             }
