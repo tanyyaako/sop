@@ -2,15 +2,15 @@ pipeline {
     agent any
 
     tools {
-            maven 'Maven'
-            jdk 'JDK 17'
-        }
+        maven 'Maven'
+        jdk 'JDK 17'
+    }
 
-        environment {
-            JAVA_HOME = tool 'JDK 17'
-            MAVEN_HOME = tool 'Maven'
-            PATH = "${MAVEN_HOME}/bin:${JAVA_HOME}/bin:${PATH}"
-        }
+    environment {
+        JAVA_HOME = tool 'JDK 17'
+        MAVEN_HOME = tool 'Maven'
+        PATH = "${MAVEN_HOME}/bin:${JAVA_HOME}/bin:${PATH}"
+    }
 
     stages {
         stage('Checkout') {
@@ -20,80 +20,220 @@ pipeline {
             }
         }
         
-        stage('Build Dependencies') {
-            steps {
-                echo 'Building hotelBooking-api...'
-                dir('hotelBooking-api') {
-                    sh './mvnw clean install -DskipTests || mvn clean install -DskipTests'
+        stage('Build Contracts') {
+            parallel failFast: false, {
+                stage('Build hotelBooking-api') {
+                    steps {
+                        dir('hotelBooking-api') {
+                            script {
+                                try {
+                                    if (isUnix()) {
+                                        sh 'mvn clean install -DskipTests'
+                                    } else {
+                                        bat 'mvnw.cmd clean install -DskipTests'
+                                    }
+                                } catch (Exception e) {
+                                    echo "Failed to build hotelBooking-api: ${e.getMessage()}"
+                                    throw e
+                                }
+                            }
+                        }
+                    }
                 }
-                
-                echo 'Building events-roomBooking-contract...'
-                dir('events-roomBooking-contract') {
-                    sh './mvnw clean install -DskipTests || mvn clean install -DskipTests'
+                stage('Build events-roomBooking-contract') {
+                    steps {
+                        dir('events-roomBooking-contract') {
+                            script {
+                                try {
+                                    if (isUnix()) {
+                                        sh 'mvn clean install -DskipTests'
+                                    } else {
+                                        bat 'mvnw.cmd clean install -DskipTests'
+                                    }
+                                } catch (Exception e) {
+                                    echo "Failed to build events-roomBooking-contract: ${e.getMessage()}"
+                                    throw e
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
         
         stage('Build Services') {
-            steps {
-                script {
-                    // Build roomBooking
-                    dir('roomBooking') {
-                        sh '''
-                            # Copy dependencies to lib
-                            cp ../hotelBooking-api/target/hotelBooking-api-0.0.1-SNAPSHOT.jar lib/hotelBooking-api.jar || true
-                            cp ../events-roomBooking-contract/target/events-roomBooking-contract-1.0-SNAPSHOT.jar lib/events-roomBooking-contract.jar || true
-                            
-                            # Build project
-                            ./mvnw clean package -DskipTests || mvn clean package -DskipTests
-                        '''
+            parallel failFast: false, {
+                stage('Build roomBooking') {
+                    steps {
+                        dir('roomBooking') {
+                            script {
+                                try {
+                                    if (isUnix()) {
+                                        sh '''
+                                            # Copy dependencies to lib
+                                            cp ../hotelBooking-api/target/hotelBooking-api-0.0.1-SNAPSHOT.jar lib/hotelBooking-api.jar || true
+                                            cp ../events-roomBooking-contract/target/events-roomBooking-contract-1.0-SNAPSHOT.jar lib/events-roomBooking-contract.jar || true
+                                            
+                                            # Build project
+                                            mvn clean package -DskipTests
+                                        '''
+                                    } else {
+                                        bat '''
+                                            copy ..\\hotelBooking-api\\target\\hotelBooking-api-0.0.1-SNAPSHOT.jar lib\\hotelBooking-api.jar
+                                            copy ..\\events-roomBooking-contract\\target\\events-roomBooking-contract-1.0-SNAPSHOT.jar lib\\events-roomBooking-contract.jar
+                                            mvnw.cmd clean package -DskipTests
+                                        '''
+                                    }
+                                } catch (Exception e) {
+                                    echo "Failed to build roomBooking: ${e.getMessage()}"
+                                    throw e
+                                }
+                            }
+                        }
                     }
-                    
-                    // Build pricing-service
-                    dir('pricing-service') {
-                        sh './mvnw clean package -DskipTests || mvn clean package -DskipTests'
+                }
+                stage('Build pricing-service') {
+                    steps {
+                        dir('pricing-service') {
+                            script {
+                                try {
+                                    if (isUnix()) {
+                                        sh 'mvn clean package -DskipTests'
+                                    } else {
+                                        bat 'mvnw.cmd clean package -DskipTests'
+                                    }
+                                } catch (Exception e) {
+                                    echo "Failed to build pricing-service: ${e.getMessage()}"
+                                    throw e
+                                }
+                            }
+                        }
                     }
-                    
-                    // Build notification-service
-                    dir('notification-service') {
-                        sh '''
-                            cp ../events-roomBooking-contract/target/events-roomBooking-contract-1.0-SNAPSHOT.jar lib/events-roomBooking-contract.jar || true
-                            ./mvnw clean package -DskipTests || mvn clean package -DskipTests
-                        '''
+                }
+                stage('Build notification-service') {
+                    steps {
+                        dir('notification-service') {
+                            script {
+                                try {
+                                    if (isUnix()) {
+                                        sh '''
+                                            cp ../events-roomBooking-contract/target/events-roomBooking-contract-1.0-SNAPSHOT.jar lib/events-roomBooking-contract.jar || true
+                                            mvn clean package -DskipTests
+                                        '''
+                                    } else {
+                                        bat '''
+                                            copy ..\\events-roomBooking-contract\\target\\events-roomBooking-contract-1.0-SNAPSHOT.jar lib\\events-roomBooking-contract.jar
+                                            mvnw.cmd clean package -DskipTests
+                                        '''
+                                    }
+                                } catch (Exception e) {
+                                    echo "Failed to build notification-service: ${e.getMessage()}"
+                                    throw e
+                                }
+                            }
+                        }
                     }
-                    
-                    // Build audit-booking-service
-                    dir('audit-booking-service') {
-                        sh '''
-                            cp ../events-roomBooking-contract/target/events-roomBooking-contract-1.0-SNAPSHOT.jar lib/events-roomBooking-contract.jar || true
-                            ./mvnw clean package -DskipTests || mvn clean package -DskipTests
-                        '''
+                }
+                stage('Build audit-booking-service') {
+                    steps {
+                        dir('audit-booking-service') {
+                            script {
+                                try {
+                                    if (isUnix()) {
+                                        sh '''
+                                            cp ../events-roomBooking-contract/target/events-roomBooking-contract-1.0-SNAPSHOT.jar lib/events-roomBooking-contract.jar || true
+                                            mvn clean package -DskipTests
+                                        '''
+                                    } else {
+                                        bat '''
+                                            copy ..\\events-roomBooking-contract\\target\\events-roomBooking-contract-1.0-SNAPSHOT.jar lib\\events-roomBooking-contract.jar
+                                            mvnw.cmd clean package -DskipTests
+                                        '''
+                                    }
+                                } catch (Exception e) {
+                                    echo "Failed to build audit-booking-service: ${e.getMessage()}"
+                                    throw e
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
         
-        stage('Docker Build') {
-            steps {
-                echo 'Building Docker images...'
-                sh 'docker-compose build'
-            }
-        }
-        
-        // stage('Docker Up') {
-        //     steps {
-        //         echo 'Starting containers...'
-        //         sh 'docker-compose up -d'
-        //     }
-        // }
-        
-        stage('Health Check') {
-            steps {
-                echo 'Waiting for services to start...'
-                sleep(time: 30, unit: 'SECONDS')
-                
-                script {
-                    sh 'docker-compose ps'
+        stage('Build Docker Images') {
+            parallel failFast: false, {
+                stage('Build pricing-service image') {
+                    steps {
+                        dir('pricing-service') {
+                            script {
+                                try {
+                                    if (isUnix()) {
+                                        sh 'docker build -t bookings/pricing-service:latest .'
+                                    } else {
+                                        bat 'docker build -t bookings/pricing-service:latest .'
+                                    }
+                                } catch (Exception e) {
+                                    echo "Failed to build pricing-service image: ${e.getMessage()}"
+                                    throw e
+                                }
+                            }
+                        }
+                    }
+                }
+                stage('Build audit-booking-service image') {
+                    steps {
+                        dir('audit-booking-service') {
+                            script {
+                                try {
+                                    if (isUnix()) {
+                                        sh 'docker build -t bookings/audit-booking-service:latest .'
+                                    } else {
+                                        bat 'docker build -t bookings/audit-booking-service:latest .'
+                                    }
+                                } catch (Exception e) {
+                                    echo "Failed to build audit-booking-service image: ${e.getMessage()}"
+                                    throw e
+                                }
+                            }
+                        }
+                    }
+                }
+                stage('Build notification-service image') {
+                    steps {
+                        dir('notification-service') {
+                            script {
+                                try {
+                                    if (isUnix()) {
+                                        sh 'docker build -t bookings/notification-service:latest .'
+                                    } else {
+                                        bat 'docker build -t bookings/notification-service:latest .'
+                                    }
+                                } catch (Exception e) {
+                                    echo "Failed to build notification-service image: ${e.getMessage()}"
+                                    throw e
+                                }
+                            }
+                        }
+                    }
+                }
+                stage('Build roomBooking image') {
+                    steps {
+                        dir('roomBooking') {
+                            script {
+                                try {
+                                    if (isUnix()) {
+                                        sh 'docker build -t bookings/room-booking:latest .'
+                                    } else {
+                                        bat 'docker build -t bookings/room-booking:latest .'
+                                    }
+                                } catch (Exception e) {
+                                    echo "Failed to build roomBooking image: ${e.getMessage()}"
+                                    throw e
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -101,16 +241,11 @@ pipeline {
     
     post {
         success {
-            echo 'Pipeline completed successfully!'
-            sh 'docker-compose ps'
+            echo 'Build completed successfully!'
+            archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true, allowEmptyArchive: true
         }
         failure {
-            echo 'Pipeline failed!'
-            sh 'docker-compose logs --tail=50'
-        }
-        always {
-            echo 'Build completed!'
+            echo 'Build failed!'
         }
     }
 }
-
