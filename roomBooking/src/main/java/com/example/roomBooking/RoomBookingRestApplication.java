@@ -6,7 +6,7 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.hateoas.config.EnableHypermediaSupport;
 
 @SpringBootApplication(
-		scanBasePackages = {"com.example.roomBooking", "org.example.hotelbookingapi"},
+		scanBasePackages = {"com.example.roomBooking", "org.example.hotelbookingapi", "org.example.eventsroomBookingcontract"},
 		exclude = {DataSourceAutoConfiguration.class}
 )
 @EnableHypermediaSupport(type = EnableHypermediaSupport.HypermediaType.HAL)

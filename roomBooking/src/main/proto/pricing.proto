@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package org.example.pricingservice;
+
+option java_multiple_files = true;
+option java_package = "org.example.pricingservice.grpc";
+option java_outer_classname = "PricingProto";
+
+// Сервис ценообразования
+service PricingService {
+  // Рассчитать оптимальную цену для бронирования
+  rpc CalculatePrice (PriceRequest) returns (PriceResponse);
+}
+
+// Запрос на расчет цены
+message PriceRequest {
+  int64 room_id = 1;
+  int64 hotel_id = 2;
+  string date_from = 3;  // Формат: YYYY-MM-DD
+  string date_to = 4;    // Формат: YYYY-MM-DD
+  double base_price = 5; // Базовая цена номера (опционально)
+  double occupancy_rate = 6; // Процент загруженности (0.0 - 1.0)
+}
+
+// Ответ с рассчитанной ценой
+message PriceResponse {
+  double price = 1;
+  string currency = 2;
+}
+

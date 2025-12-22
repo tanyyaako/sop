@@ -1,0 +1,28 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: "roomBooking"
+    metrics_path: "/actuator/prometheus"
+    static_configs:
+      - targets:
+          - "roomBooking:8081"
+
+  - job_name: "pricing-service"
+    metrics_path: "/actuator/prometheus"
+    static_configs:
+      - targets:
+          - "pricing-service:8080"
+
+  - job_name: "notification-service"
+    metrics_path: "/actuator/prometheus"
+    static_configs:
+      - targets:
+          - "notification-service:8083"
+
+  - job_name: "audit-booking-service"
+    metrics_path: "/actuator/prometheus"
+    static_configs:
+      - targets:
+          - "audit-booking-service:8082"

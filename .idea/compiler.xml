@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <module name="roomBooking-rest" />
+        <module name="events-roomBooking-contract" />
+        <module name="audit-booking-service" />
+        <module name="hotelBooking-api" />
+        <module name="pricing-service" />
+      </profile>
+    </annotationProcessing>
+  </component>
+  <component name="JavacSettings">
+    <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="audit-booking-service" options="-parameters" />
+      <module name="hotelBooking-api" options="-parameters" />
+      <module name="pricing-service" options="-parameters" />
+      <module name="roomBooking-rest" options="-parameters" />
+    </option>
+  </component>
+</project>

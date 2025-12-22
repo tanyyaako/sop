@@ -2,6 +2,7 @@ package com.example.roomBooking.Service;
 
 import com.example.roomBooking.Storage.InMemoryStorage;
 import com.example.roomBooking.config.RabbitMQConfig;
+import com.example.roomBooking.Service.PricingServiceClient;
 import org.example.events.RoomBookedEvent;
 import org.example.events.RoomUnbookedEvent;
 import org.example.hotelbookingapi.DTO.*;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -22,11 +24,13 @@ public class RoomService {
     private final InMemoryStorage storage;
     private final HotelService hotelService;
     private final RabbitTemplate rabbitTemplate;
+    private final PricingServiceClient pricingServiceClient;
 
-    public RoomService(InMemoryStorage storage, HotelService hotelService, RabbitTemplate rabbitTemplate ) {
+    public RoomService(InMemoryStorage storage, HotelService hotelService, RabbitTemplate rabbitTemplate, PricingServiceClient pricingServiceClient) {
         this.storage = storage;
         this.hotelService = hotelService;
         this.rabbitTemplate = rabbitTemplate;
+        this.pricingServiceClient = pricingServiceClient;
     }
     public RoomResponse findRoomById(Long id) {
         return Optional.ofNullable(storage.rooms.get(id))
@@ -107,15 +111,47 @@ public class RoomService {
             throw new ResourceNotFoundException("Room", request.roomId());
         }
 
-        LocalDateTime from = LocalDate.parse(request.dateFrom()).atStartOfDay();
-        LocalDateTime to = LocalDate.parse(request.dateTo()).atStartOfDay();
+        LocalDateTime from;
+        LocalDateTime to;
+        try {
+            from = LocalDate.parse(request.dateFrom()).atTime(14, 0);
+            to = LocalDate.parse(request.dateTo()).atTime(12, 0);
+        } catch (Exception e){
+            throw new IllegalArgumentException("Неверный формат даты. Используйте YYYY-MM-DD");
+        }
+
+        if (!to.isAfter(from)) {
+            throw new IllegalArgumentException("Дата выезда должна быть после даты заезда");
+        }
+
         boolean overlaps = room.getBooks() != null && room.getBooks().stream()
                 .anyMatch(b -> datesOverlap(b.getFrom(), b.getTo(), from, to));
         if (overlaps) {
             throw new RoomAlreadyBookedException(from, to, request.roomId());
         }
 
+        // Рассчитываем цену через pricing-service
+        LocalDate dateFrom = from.toLocalDate();
+        LocalDate dateTo = to.toLocalDate();
+        double basePrice = room.getBasePrice() != null ? room.getBasePrice() : 1000.0;
+        
+        // Рассчитываем процент загруженности на основе существующих бронирований
+        long totalDays = ChronoUnit.DAYS.between(dateFrom, dateTo) + 1;
+        int existingBookings = room.getBooks() != null ? room.getBooks().size() : 0;
+        double occupancyRate = pricingServiceClient.calculateOccupancyRate(existingBookings, (int) totalDays);
+        
+        // Получаем цену от pricing-service
+        double calculatedPrice = pricingServiceClient.calculatePrice(
+                room.getId(),
+                room.getHotel().getId(),
+                dateFrom,
+                dateTo,
+                basePrice,
+                occupancyRate
+        );
+
         LocalDateTime bookedAt = LocalDateTime.now();
+        LocalDateTime priceCalculatedAt = LocalDateTime.now();
         Long bookingId = storage.bookingSequence.incrementAndGet();
         BookRoomResponse booking = new BookRoomResponse(
                 bookedAt,
@@ -128,13 +164,16 @@ public class RoomService {
                 request.documentNumber(),
                 request.userCountry(),
                 from,
-                to
+                to,
+                calculatedPrice
         );
         if (room.getBooks() == null) {
             room.setBooks(new ArrayList<>());
         }
         room.getBooks().add(booking);
         storage.bookRooms.put(bookingId, booking);
+        
+        // Отправляем событие RoomBookedEvent с рассчитанной ценой в Fanout exchange
         RoomBookedEvent event = new RoomBookedEvent(
                 booking.getId(),
                 booking.getRoomId(),
@@ -142,10 +181,17 @@ public class RoomService {
                 booking.getNumberDocument(),
                 booking.getUserName(),
                 booking.getUserSurname(),
-                booking.getFrom(),
-                booking.getTo(),
-                bookedAt
+                booking.getFrom().toString(),
+                booking.getTo().toString(),
+                bookedAt.toString(),
+                calculatedPrice,
+                "RUB"
         );
+        
+        // Отправляем в Fanout exchange для рассылки всем подписчикам
+        rabbitTemplate.convertAndSend(RabbitMQConfig.ROOM_BOOKED_FANOUT_EXCHANGE, "", event);
+        
+        // Также отправляем в Topic exchange для обратной совместимости
         rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE_NAME, RabbitMQConfig.ROUTING_KEY_ROOM_BOOKED, event);
         return booking;
     }
@@ -166,7 +212,7 @@ public class RoomService {
 
         storage.bookRooms.remove(booking.getId());
         LocalDateTime unBookedAt = LocalDateTime.now();
-        RoomUnbookedEvent event = new RoomUnbookedEvent(booking.getId(), unBookedAt);
+        RoomUnbookedEvent event = new RoomUnbookedEvent(booking.getId(), unBookedAt.toString());
         rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE_NAME, RabbitMQConfig.ROUTING_KEY_ROOM_UNBOOKED, event);
         return new UnbookRoomResponse(
                 booking.getId(),

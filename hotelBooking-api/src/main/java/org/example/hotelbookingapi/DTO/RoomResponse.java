@@ -14,11 +14,16 @@ public class RoomResponse extends RepresentationModel<RoomResponse> {
     private final Double area;
     private final Integer floor;
     private final String numberRoom;
+    private final Double basePrice;
     private List<String> roomPhotoUrl;
     @JsonIgnore
     private List<BookRoomResponse> books;
 
     public RoomResponse(Double area, Long id, HotelResponse hotel, Integer floor, String numberRoom, List<BookRoomResponse> books, List<String> roomPhotoUrl) {
+        this(area, id, hotel, floor, numberRoom, books, roomPhotoUrl, null);
+    }
+
+    public RoomResponse(Double area, Long id, HotelResponse hotel, Integer floor, String numberRoom, List<BookRoomResponse> books, List<String> roomPhotoUrl, Double basePrice) {
         this.area = area;
         this.id = id;
         this.hotel = hotel;
@@ -26,6 +31,7 @@ public class RoomResponse extends RepresentationModel<RoomResponse> {
         this.numberRoom = numberRoom;
         this.books = books;
         this.roomPhotoUrl = roomPhotoUrl;
+        this.basePrice = basePrice;
     }
 
     public Double getArea() {
@@ -64,17 +70,21 @@ public class RoomResponse extends RepresentationModel<RoomResponse> {
         this.roomPhotoUrl = roomPhotoUrl;
     }
 
+    public Double getBasePrice() {
+        return basePrice;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
         RoomResponse that = (RoomResponse) o;
-        return Objects.equals(id, that.id) && Objects.equals(hotel, that.hotel) && Objects.equals(area, that.area) && Objects.equals(floor, that.floor) && Objects.equals(numberRoom, that.numberRoom) && Objects.equals(roomPhotoUrl, that.roomPhotoUrl) && Objects.equals(books, that.books);
+        return Objects.equals(id, that.id) && Objects.equals(hotel, that.hotel) && Objects.equals(area, that.area) && Objects.equals(floor, that.floor) && Objects.equals(numberRoom, that.numberRoom) && Objects.equals(roomPhotoUrl, that.roomPhotoUrl) && Objects.equals(books, that.books) && Objects.equals(basePrice, that.basePrice);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), id, hotel, area, floor, numberRoom, roomPhotoUrl, books);
+        return Objects.hash(super.hashCode(), id, hotel, area, floor, numberRoom, roomPhotoUrl, books, basePrice);
     }
 }

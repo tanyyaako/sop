@@ -5,6 +5,6 @@ import java.time.LocalDateTime;
 
 public record RoomUnbookedEvent(
         Long bookingId,
-        LocalDateTime unbookedAt
+        String unbookedAt
 ) implements Serializable {
 }

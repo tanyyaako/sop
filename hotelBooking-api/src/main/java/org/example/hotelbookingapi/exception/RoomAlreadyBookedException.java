@@ -5,6 +5,6 @@ import java.util.List;
 
 public class RoomAlreadyBookedException extends RuntimeException {
     public RoomAlreadyBookedException(LocalDateTime dateFrom, LocalDateTime dateTo, Object id) {
-        super(String.format("Номер с ID %s с %s по %s уже забронирована", dateFrom, dateTo, id));
+        super(String.format("Номер с ID %s с %s по %s уже забронирована", id, dateFrom, dateTo));
     }
 }

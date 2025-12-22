@@ -10,8 +10,10 @@ public record RoomBookedEvent(
         String documentNumber,
         String userName,
         String userSurname,
-        LocalDateTime from,
-        LocalDateTime to,
-        LocalDateTime bookedAt
+        String from,
+        String to,
+        String bookedAt,
+        Double price,
+        String currency
 ) implements Serializable {
 }
