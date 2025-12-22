@@ -1,20 +1,21 @@
 # Этап сборки
 FROM maven:3.9-eclipse-temurin-17 AS build
 WORKDIR /app
-# Копируем локальные библиотеки (контракты), если они есть
-COPY lib /app/lib
+# Копируем описание проекта
 COPY pom.xml .
+# Копируем JAR контрактов (если есть) и устанавливаем в Maven репозиторий
+COPY lib/events-roomBooking-contract.jar /tmp/events-roomBooking-contract.jar
+RUN if [ -f /tmp/events-roomBooking-contract.jar ]; then \
+        mvn install:install-file \
+            -Dfile=/tmp/events-roomBooking-contract.jar \
+            -DgroupId=org.example \
+            -DartifactId=events-roomBooking-contract \
+            -Dversion=1.0-SNAPSHOT \
+            -Dpackaging=jar || true; \
+    fi
+# Копируем исходный код
 COPY src ./src
-
-# Устанавливаем локальные зависимости в Maven репозиторий
-RUN mvn install:install-file \
-    -Dfile=/app/lib/events-roomBooking-contract.jar \
-    -DgroupId=org.example \
-    -DartifactId=events-roomBooking-contract \
-    -Dversion=1.0-SNAPSHOT \
-    -Dpackaging=jar || true
-
-# Собираем проект
+# Собираем проект (Maven найдет контракты в локальном репозитории)
 RUN mvn clean package -DskipTests
 
 # Этап запуска

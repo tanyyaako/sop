@@ -122,11 +122,15 @@ pipeline {
                                 try {
                                     if (isUnix()) {
                                         sh '''
+                                            # Создаем директорию lib и копируем контракты для Docker сборки
+                                            mkdir -p lib
                                             cp ../events-roomBooking-contract/target/events-roomBooking-contract-1.0-SNAPSHOT.jar lib/events-roomBooking-contract.jar || true
+                                            # Собираем проект (контракты уже в Maven репозитории после этапа Build Contracts)
                                             mvn clean package -DskipTests
                                         '''
                                     } else {
                                         bat '''
+                                            if not exist lib mkdir lib
                                             copy ..\\events-roomBooking-contract\\target\\events-roomBooking-contract-1.0-SNAPSHOT.jar lib\\events-roomBooking-contract.jar
                                             mvnw.cmd clean package -DskipTests
                                         '''
@@ -148,11 +152,15 @@ pipeline {
                                 try {
                                     if (isUnix()) {
                                         sh '''
+                                            # Создаем директорию lib и копируем контракты для Docker сборки
+                                            mkdir -p lib
                                             cp ../events-roomBooking-contract/target/events-roomBooking-contract-1.0-SNAPSHOT.jar lib/events-roomBooking-contract.jar || true
+                                            # Собираем проект (контракты уже в Maven репозитории после этапа Build Contracts)
                                             mvn clean package -DskipTests
                                         '''
                                     } else {
                                         bat '''
+                                            if not exist lib mkdir lib
                                             copy ..\\events-roomBooking-contract\\target\\events-roomBooking-contract-1.0-SNAPSHOT.jar lib\\events-roomBooking-contract.jar
                                             mvnw.cmd clean package -DskipTests
                                         '''
