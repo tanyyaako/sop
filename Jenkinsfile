@@ -272,6 +272,22 @@ pipeline {
         }
         failure {
             echo 'Build failed!'
+            echo 'Checking which stages failed...'
+            script {
+                // Выводим информацию о статусе каждого этапа
+                echo 'Pipeline failure detected. Check individual stage logs above for details.'
+            }
+        }
+        always {
+            echo 'Pipeline execution completed.'
+            // Показываем список собранных Docker образов
+            script {
+                if (isUnix()) {
+                    sh 'docker images | grep bookings || echo "No bookings images found"'
+                } else {
+                    bat 'docker images | findstr bookings || echo No bookings images found'
+                }
+            }
         }
     }
 }
