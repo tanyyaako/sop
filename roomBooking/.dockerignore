@@ -1,0 +1,19 @@
+# Исключаем ненужные файлы из Docker build context
+target/*.original
+target/*-sources.jar
+target/*-javadoc.jar
+target/test-classes
+target/generated-sources
+target/generated-test-sources
+target/maven-archiver
+target/maven-status
+target/protoc-dependencies
+target/protoc-plugins
+.mvn
+mvnw
+mvnw.cmd
+.git
+.gitignore
+*.md
+HELP.md
+

@@ -5,9 +5,13 @@ WORKDIR /app
 # Создаем пользователя 'javauser', чтобы не запускать приложение от root (Security Best Practice)
 RUN addgroup -S javauser && adduser -S javauser -G javauser
 
-# Копируем JAR файл (должен быть собран локально перед сборкой Docker образа)
-# Используем явное имя файла для надежности
-COPY --chown=javauser:javauser target/roomBooking-rest-0.0.1-SNAPSHOT.jar app.jar
+# Аргумент для поиска JAR файла.
+# Используем wildcard, так как .original файлы исключены через .dockerignore
+# Так как мы сделали mvn clean package, в папке target будет лежать нужный нам fat-jar.
+ARG JAR_FILE=target/*.jar
+
+# Копируем JAR внутрь образа под именем app.jar
+COPY --chown=javauser:javauser ${JAR_FILE} app.jar
 
 # Переключаемся на пользователя
 USER javauser

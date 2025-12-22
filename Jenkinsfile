@@ -71,18 +71,24 @@ pipeline {
                                 try {
                                     if (isUnix()) {
                                         sh '''
-                                            # Copy dependencies to lib
+                                            # Создаем директорию lib и копируем зависимости для Maven сборки
+                                            mkdir -p lib
                                             cp ../hotelBooking-api/target/hotelBooking-api-0.0.1-SNAPSHOT.jar lib/hotelBooking-api.jar || true
                                             cp ../events-roomBooking-contract/target/events-roomBooking-contract-1.0-SNAPSHOT.jar lib/events-roomBooking-contract.jar || true
                                             
-                                            # Build project
+                                            # Собираем проект (контракты уже в Maven репозитории после этапа Build Contracts)
                                             mvn clean package -DskipTests
+                                            
+                                            # Удаляем .original файл, чтобы использовать wildcard в Dockerfile
+                                            rm -f target/*.original || true
                                         '''
                                     } else {
                                         bat '''
+                                            if not exist lib mkdir lib
                                             copy ..\\hotelBooking-api\\target\\hotelBooking-api-0.0.1-SNAPSHOT.jar lib\\hotelBooking-api.jar
                                             copy ..\\events-roomBooking-contract\\target\\events-roomBooking-contract-1.0-SNAPSHOT.jar lib\\events-roomBooking-contract.jar
                                             mvnw.cmd clean package -DskipTests
+                                            del /f /q target\\*.original 2>nul
                                         '''
                                     }
                                     echo "✓ roomBooking built successfully"
@@ -135,9 +141,9 @@ pipeline {
                                             mvnw.cmd clean package -DskipTests
                                         '''
                                     }
-                                    echo "✓ notification-service built successfully"
+                                    echo " notification-service built successfully"
                                 } catch (Exception e) {
-                                    echo "✗ Failed to build notification-service: ${e.getMessage()}"
+                                    echo " Failed to build notification-service: ${e.getMessage()}"
                                     throw e
                                 }
                             }
@@ -165,9 +171,9 @@ pipeline {
                                             mvnw.cmd clean package -DskipTests
                                         '''
                                     }
-                                    echo "✓ audit-booking-service built successfully"
+                                    echo " audit-booking-service built successfully"
                                 } catch (Exception e) {
-                                    echo "✗ Failed to build audit-booking-service: ${e.getMessage()}"
+                                    echo " Failed to build audit-booking-service: ${e.getMessage()}"
                                     throw e
                                 }
                             }
@@ -190,9 +196,9 @@ pipeline {
                                     } else {
                                         bat 'docker build -t bookings/pricing-service:latest .'
                                     }
-                                    echo "✓ pricing-service image built successfully"
+                                    echo " pricing-service image built successfully"
                                 } catch (Exception e) {
-                                    echo "✗ Failed to build pricing-service image: ${e.getMessage()}"
+                                    echo " Failed to build pricing-service image: ${e.getMessage()}"
                                     throw e
                                 }
                             }
@@ -210,9 +216,9 @@ pipeline {
                                     } else {
                                         bat 'docker build -t bookings/audit-booking-service:latest .'
                                     }
-                                    echo "✓ audit-booking-service image built successfully"
+                                    echo " audit-booking-service image built successfully"
                                 } catch (Exception e) {
-                                    echo "✗ Failed to build audit-booking-service image: ${e.getMessage()}"
+                                    echo " Failed to build audit-booking-service image: ${e.getMessage()}"
                                     throw e
                                 }
                             }
@@ -230,9 +236,9 @@ pipeline {
                                     } else {
                                         bat 'docker build -t bookings/notification-service:latest .'
                                     }
-                                    echo "✓ notification-service image built successfully"
+                                    echo " notification-service image built successfully"
                                 } catch (Exception e) {
-                                    echo "✗ Failed to build notification-service image: ${e.getMessage()}"
+                                    echo " Failed to build notification-service image: ${e.getMessage()}"
                                     throw e
                                 }
                             }
@@ -268,9 +274,9 @@ pipeline {
                                         '''
                                         bat 'docker build -t bookings/room-booking:latest .'
                                     }
-                                    echo "✓ roomBooking image built successfully"
+                                    echo " roomBooking image built successfully"
                                 } catch (Exception e) {
-                                    echo "✗ Failed to build roomBooking image: ${e.getMessage()}"
+                                    echo " Failed to build roomBooking image: ${e.getMessage()}"
                                     throw e
                                 }
                             }
