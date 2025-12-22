@@ -91,9 +91,9 @@ pipeline {
                                             del /f /q target\\*.original 2>nul
                                         '''
                                     }
-                                    echo "✓ roomBooking built successfully"
+                                    echo " roomBooking built successfully"
                                 } catch (Exception e) {
-                                    echo "✗ Failed to build roomBooking: ${e.getMessage()}"
+                                    echo " Failed to build roomBooking: ${e.getMessage()}"
                                     throw e
                                 }
                             }
@@ -111,9 +111,9 @@ pipeline {
                                     } else {
                                         bat 'mvnw.cmd clean package -DskipTests'
                                     }
-                                    echo "✓ pricing-service built successfully"
+                                    echo " pricing-service built successfully"
                                 } catch (Exception e) {
-                                    echo "✗ Failed to build pricing-service: ${e.getMessage()}"
+                                    echo " Failed to build pricing-service: ${e.getMessage()}"
                                     throw e
                                 }
                             }
@@ -296,13 +296,11 @@ pipeline {
             echo 'Build failed!'
             echo 'Checking which stages failed...'
             script {
-                // Выводим информацию о статусе каждого этапа
                 echo 'Pipeline failure detected. Check individual stage logs above for details.'
             }
         }
         always {
             echo 'Pipeline execution completed.'
-            // Показываем список собранных Docker образов
             script {
                 if (isUnix()) {
                     sh 'docker images | grep bookings || echo "No bookings images found"'
