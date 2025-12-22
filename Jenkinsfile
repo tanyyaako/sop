@@ -67,6 +67,7 @@ pipeline {
                     steps {
                         dir('roomBooking') {
                             script {
+                                echo "Building roomBooking service..."
                                 try {
                                     if (isUnix()) {
                                         sh '''
@@ -84,8 +85,9 @@ pipeline {
                                             mvnw.cmd clean package -DskipTests
                                         '''
                                     }
+                                    echo "✓ roomBooking built successfully"
                                 } catch (Exception e) {
-                                    echo "Failed to build roomBooking: ${e.getMessage()}"
+                                    echo "✗ Failed to build roomBooking: ${e.getMessage()}"
                                     throw e
                                 }
                             }
@@ -96,14 +98,16 @@ pipeline {
                     steps {
                         dir('pricing-service') {
                             script {
+                                echo "Building pricing-service..."
                                 try {
                                     if (isUnix()) {
                                         sh 'mvn clean package -DskipTests'
                                     } else {
                                         bat 'mvnw.cmd clean package -DskipTests'
                                     }
+                                    echo "✓ pricing-service built successfully"
                                 } catch (Exception e) {
-                                    echo "Failed to build pricing-service: ${e.getMessage()}"
+                                    echo "✗ Failed to build pricing-service: ${e.getMessage()}"
                                     throw e
                                 }
                             }
@@ -114,6 +118,7 @@ pipeline {
                     steps {
                         dir('notification-service') {
                             script {
+                                echo "Building notification-service..."
                                 try {
                                     if (isUnix()) {
                                         sh '''
@@ -126,8 +131,9 @@ pipeline {
                                             mvnw.cmd clean package -DskipTests
                                         '''
                                     }
+                                    echo "✓ notification-service built successfully"
                                 } catch (Exception e) {
-                                    echo "Failed to build notification-service: ${e.getMessage()}"
+                                    echo "✗ Failed to build notification-service: ${e.getMessage()}"
                                     throw e
                                 }
                             }
@@ -138,6 +144,7 @@ pipeline {
                     steps {
                         dir('audit-booking-service') {
                             script {
+                                echo "Building audit-booking-service..."
                                 try {
                                     if (isUnix()) {
                                         sh '''
@@ -150,8 +157,9 @@ pipeline {
                                             mvnw.cmd clean package -DskipTests
                                         '''
                                     }
+                                    echo "✓ audit-booking-service built successfully"
                                 } catch (Exception e) {
-                                    echo "Failed to build audit-booking-service: ${e.getMessage()}"
+                                    echo "✗ Failed to build audit-booking-service: ${e.getMessage()}"
                                     throw e
                                 }
                             }
