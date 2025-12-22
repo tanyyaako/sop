@@ -1,5 +1,4 @@
 services:
-  # Инфраструктура: Брокер сообщений
   rabbitmq:
     image: rabbitmq:3.13-management
     ports:
@@ -13,7 +12,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # Инфраструктура: Трассировка
   zipkin:
     image: openzipkin/zipkin
     ports:
@@ -21,7 +19,6 @@ services:
     networks:
       - microservices-net
 
-  # Инфраструктура: Метрики
   prometheus:
     image: prom/prometheus
     volumes:
@@ -31,7 +28,6 @@ services:
     networks:
       - microservices-net
 
-  # Инфраструктура: Визуализация метрик
   grafana:
     image: grafana/grafana:latest
     ports:
@@ -47,7 +43,6 @@ services:
     depends_on:
       - prometheus
 
-  # Инфраструктура: CI/CD
   jenkins:
     build:
       context: ./jenkins
@@ -65,12 +60,11 @@ services:
     depends_on:
       - rabbitmq
 
-  # Микросервисы
   pricing-service:
     build: ./pricing-service
     image: bookings/pricing-service:latest
     ports:
-      - "9091:9090" # gRPC порт
+      - "9091:9090"
     environment:
       - SPRING_RABBITMQ_HOST=rabbitmq
     depends_on:
@@ -112,7 +106,6 @@ services:
       - "8081:8081"
     environment:
       - SPRING_RABBITMQ_HOST=rabbitmq
-      # Указываем адрес gRPC сервиса внутри сети Docker
       - GRPC_CLIENT_PRICING_SERVICE_ADDRESS=static://pricing-service:9090
     depends_on:
       rabbitmq:
