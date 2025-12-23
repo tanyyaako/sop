@@ -31,3 +31,7 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# JAR files in lib/
+lib/*.jar
+!lib/events-roomBooking-contract.jar

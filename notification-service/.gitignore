@@ -21,4 +21,5 @@ out/
 .vscode/
 
 lib/*.jar
+!lib/events-roomBooking-contract.jar
 
