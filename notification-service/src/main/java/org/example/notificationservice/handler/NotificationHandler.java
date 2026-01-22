@@ -54,7 +54,9 @@ public class NotificationHandler extends TextWebSocketHandler {
             
             for (WebSocketSession session : sessions) {
                 try {
-                    session.sendMessage(message);
+                    synchronized (session) {
+                        session.sendMessage(message);
+                    }
                     logger.debug("Notification sent to session: {}", session.getId());
                 } catch (Exception e) {
                     logger.error("Error sending message to session: {}", session.getId(), e);

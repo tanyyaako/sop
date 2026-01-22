@@ -4,6 +4,7 @@ import com.example.roomBooking.config.RabbitMQConfig;
 import org.example.events.RoomBookedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.amqp.rabbit.annotation.Argument;
 import org.springframework.amqp.rabbit.annotation.Exchange;
 import org.springframework.amqp.rabbit.annotation.Queue;
 import org.springframework.amqp.rabbit.annotation.QueueBinding;
@@ -17,7 +18,14 @@ public class RoomBookedLoggingListener {
 
     @RabbitListener(
         bindings = @QueueBinding(
-            value = @Queue(name = "q.roomBooking.analytics.log", durable = "true"),
+            value = @Queue(
+                name = "q.roomBooking.analytics.log",
+                durable = "true",
+                arguments = {
+                    @Argument(name = "x-dead-letter-exchange", value = "dlx-exchange"),
+                    @Argument(name = "x-dead-letter-routing-key", value = "dlq.notifications")
+                }
+            ),
             exchange = @Exchange(name = RabbitMQConfig.ROOM_BOOKED_FANOUT_EXCHANGE, type = "fanout")
         )
     )

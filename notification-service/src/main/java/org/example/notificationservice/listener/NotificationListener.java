@@ -4,6 +4,7 @@ import org.example.events.RoomBookedEvent;
 import org.example.notificationservice.handler.NotificationHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.amqp.rabbit.annotation.Argument;
 import org.springframework.amqp.rabbit.annotation.Exchange;
 import org.springframework.amqp.rabbit.annotation.Queue;
 import org.springframework.amqp.rabbit.annotation.QueueBinding;
@@ -23,7 +24,14 @@ public class NotificationListener {
 
     @RabbitListener(
         bindings = @QueueBinding(
-            value = @Queue(name = "q.notification-service.analytics", durable = "true"),
+            value = @Queue(
+                name = "q.notification-service.analytics",
+                durable = "true",
+                arguments = {
+                    @Argument(name = "x-dead-letter-exchange", value = "dlx-exchange"),
+                    @Argument(name = "x-dead-letter-routing-key", value = "dlq.notifications")
+                }
+            ),
             exchange = @Exchange(name = "room-booked-fanout", type = "fanout")
         )
     )

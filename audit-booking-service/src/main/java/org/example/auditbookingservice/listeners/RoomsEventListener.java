@@ -36,7 +36,14 @@ public class RoomsEventListener {
 
     @RabbitListener(
         bindings = @QueueBinding(
-            value = @Queue(name = "q.audit.analytics", durable = "true"),
+            value = @Queue(
+                name = "q.audit.analytics",
+                durable = "true",
+                arguments = {
+                    @Argument(name = "x-dead-letter-exchange", value = "dlx-exchange"),
+                    @Argument(name = "x-dead-letter-routing-key", value = "dlq.notifications")
+                }
+            ),
             exchange = @Exchange(name = ROOM_BOOKED_FANOUT_EXCHANGE, type = "fanout")
         )
     )
