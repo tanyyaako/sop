@@ -57,7 +57,7 @@ public class RoomController implements RoomApi {
 
     @Override
     public ResponseEntity<EntityModel<RoomResponse>> createRoom(@Valid RoomRequest roomRequest) {
-        RoomResponse roomResponse = roomService.createBook(roomRequest);
+        RoomResponse roomResponse = roomService.createRoom(roomRequest);
         EntityModel<RoomResponse> entityModel = roomModelAssembler.toModel(roomResponse);
 
         return ResponseEntity
@@ -67,13 +67,13 @@ public class RoomController implements RoomApi {
 
     @Override
     public EntityModel<RoomResponse> updateRoom(String id, @Valid UpdateRoomRequest updateRoomRequest) {
-        RoomResponse roomResponse = roomService.updateBook(Long.valueOf(id), updateRoomRequest);
+        RoomResponse roomResponse = roomService.updateRoom(Long.valueOf(id), updateRoomRequest);
         return roomModelAssembler.toModel(roomResponse);
     }
 
     @Override
     public void deleteRoom(String id) {
-        roomService.deleteBook(Long.valueOf(id));
+        roomService.deleteRoom(Long.valueOf(id));
     }
 
     @Override

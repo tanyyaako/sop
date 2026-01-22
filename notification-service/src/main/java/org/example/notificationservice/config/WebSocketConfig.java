@@ -1,9 +1,7 @@
 package org.example.notificationservice.config;
 
-import org.example.notificationservice.handler.NotificationWebSocketHandler;
-import org.springframework.context.annotation.Bean;
+import org.example.notificationservice.handler.NotificationHandler;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
@@ -12,15 +10,15 @@ import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
 @EnableWebSocket
 public class WebSocketConfig implements WebSocketConfigurer {
 
-    private final NotificationWebSocketHandler notificationWebSocketHandler;
+    private final NotificationHandler notificationHandler;
 
-    public WebSocketConfig(NotificationWebSocketHandler notificationWebSocketHandler) {
-        this.notificationWebSocketHandler = notificationWebSocketHandler;
+    public WebSocketConfig(NotificationHandler notificationHandler) {
+        this.notificationHandler = notificationHandler;
     }
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(notificationWebSocketHandler, "/ws/notifications")
+        registry.addHandler(notificationHandler, "/ws/notifications")
                 .setAllowedOriginPatterns("*");
     }
 }

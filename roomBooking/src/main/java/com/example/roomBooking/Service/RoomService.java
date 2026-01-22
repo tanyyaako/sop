@@ -57,7 +57,7 @@ public class RoomService {
 
         return new PagedResponse<>(pageContent, page, size, totalElements, totalPages, page >= totalPages - 1);
     }
-    public RoomResponse createBook(RoomRequest request) {
+    public RoomResponse createRoom(RoomRequest request) {
         HotelResponse hotel = hotelService.findById(Long.valueOf(request.hotelId()));
         validateRoom(request.hotelId(), request.numberRoom(), null);
 
@@ -74,7 +74,7 @@ public class RoomService {
         storage.rooms.put(id, room);
         return room;
     }
-    public RoomResponse updateBook(Long id, UpdateRoomRequest request) {
+    public RoomResponse updateRoom(Long id, UpdateRoomRequest request) {
         RoomResponse existingRoom = findRoomById(id);
         validateRoom(null, request.numberRoom(), id.toString());
 
@@ -90,7 +90,7 @@ public class RoomService {
         storage.rooms.put(id, updatedRoom);
         return updatedRoom;
     }
-    public void deleteBook(Long id) {
+    public void deleteRoom(Long id) {
         RoomResponse room = findRoomById(id);
         if (room.getHotel() != null && room.getHotel().getRoomResponses() != null) {
             room.getHotel().getRoomResponses().removeIf(r -> r.getId().equals(id));
@@ -130,28 +130,21 @@ public class RoomService {
             throw new RoomAlreadyBookedException(from, to, request.roomId());
         }
 
-        // Рассчитываем цену через pricing-service
         LocalDate dateFrom = from.toLocalDate();
         LocalDate dateTo = to.toLocalDate();
         double basePrice = room.getBasePrice() != null ? room.getBasePrice() : 1000.0;
-        
-        // Рассчитываем процент загруженности на основе существующих бронирований
+
         long totalDays = ChronoUnit.DAYS.between(dateFrom, dateTo) + 1;
-        int existingBookings = room.getBooks() != null ? room.getBooks().size() : 0;
+        Long hotelId = room.getHotel().getId();
+        int existingBookings = (int) storage.bookRooms.values().stream()
+                .filter(booking -> hotelId.equals(booking.getHotelId()))
+                .count();
         double occupancyRate = pricingServiceClient.calculateOccupancyRate(existingBookings, (int) totalDays);
-        
-        // Получаем цену от pricing-service
-        double calculatedPrice = pricingServiceClient.calculatePrice(
-                room.getId(),
-                room.getHotel().getId(),
-                dateFrom,
-                dateTo,
-                basePrice,
-                occupancyRate
+        double calculatedPrice = pricingServiceClient.calculatePrice(room.getId(), room.getHotel().getId(),
+                dateFrom, dateTo, basePrice, occupancyRate
         );
 
         LocalDateTime bookedAt = LocalDateTime.now();
-        LocalDateTime priceCalculatedAt = LocalDateTime.now();
         Long bookingId = storage.bookingSequence.incrementAndGet();
         BookRoomResponse booking = new BookRoomResponse(
                 bookedAt,
@@ -172,8 +165,7 @@ public class RoomService {
         }
         room.getBooks().add(booking);
         storage.bookRooms.put(bookingId, booking);
-        
-        // Отправляем событие RoomBookedEvent с рассчитанной ценой в Fanout exchange
+
         RoomBookedEvent event = new RoomBookedEvent(
                 booking.getId(),
                 booking.getRoomId(),
@@ -187,12 +179,8 @@ public class RoomService {
                 calculatedPrice,
                 "RUB"
         );
-        
-        // Отправляем в Fanout exchange для рассылки всем подписчикам
+
         rabbitTemplate.convertAndSend(RabbitMQConfig.ROOM_BOOKED_FANOUT_EXCHANGE, "", event);
-        
-        // Также отправляем в Topic exchange для обратной совместимости
-        rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE_NAME, RabbitMQConfig.ROUTING_KEY_ROOM_BOOKED, event);
         return booking;
     }
     public UnbookRoomResponse unbookRoom(UnbookRoomRequest request) {

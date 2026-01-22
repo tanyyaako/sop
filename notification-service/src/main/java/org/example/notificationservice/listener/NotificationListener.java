@@ -32,7 +32,6 @@ public class NotificationListener {
                 event.bookingId(), event.roomId());
         
         try {
-            // Передаем событие в NotificationHandler
             notificationHandler.handleRoomBookedEvent(event);
         } catch (Exception e) {
             logger.error("Error processing RoomBookedEvent: {}", event, e);

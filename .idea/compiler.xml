@@ -11,6 +11,7 @@
         <module name="audit-booking-service" />
         <module name="hotelBooking-api" />
         <module name="pricing-service" />
+        <module name="notification-service" />
       </profile>
     </annotationProcessing>
   </component>
@@ -18,6 +19,7 @@
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="audit-booking-service" options="-parameters" />
       <module name="hotelBooking-api" options="-parameters" />
+      <module name="notification-service" options="-parameters" />
       <module name="pricing-service" options="-parameters" />
       <module name="roomBooking-rest" options="-parameters" />
     </option>

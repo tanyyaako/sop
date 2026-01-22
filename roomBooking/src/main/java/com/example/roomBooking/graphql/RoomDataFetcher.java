@@ -54,7 +54,7 @@ public class RoomDataFetcher {
                 (String) input.get("numberRoom"),
                 (List<String>) input.get("roomPhotoUrl")
         );
-        return roomService.createBook(request);
+        return roomService.createRoom(request);
     }
 
     @DgsMutation
@@ -66,12 +66,12 @@ public class RoomDataFetcher {
                 (String) input.get("numberRoom"),
                 (List<String>) input.get("roomPhotoUrl")
         );
-        return roomService.updateBook(id, request);
+        return roomService.updateRoom(id, request);
     }
 
     @DgsMutation
     public Boolean deleteRoom(@InputArgument Long id) {
-        roomService.deleteBook(id);
+        roomService.deleteRoom(id);
         return true;
     }
 

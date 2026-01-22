@@ -11,4 +11,5 @@ import java.util.concurrent.atomic.AtomicLong;
 public class InMemoryStorage {
     public final Map<Long, RoomBookedEvent> bookRooms = new ConcurrentHashMap<>();
     public final AtomicLong bookingSequence = new AtomicLong(0);
+    public final Map<Long, RoomBookedEvent> foreignerBookings = new ConcurrentHashMap<>();
 }

@@ -9,6 +9,7 @@
         <option value="$PROJECT_DIR$/audit-booking-service/pom.xml" />
         <option value="$PROJECT_DIR$/events-roomBooking-contract/pom.xml" />
         <option value="$PROJECT_DIR$/pricing-service/pom.xml" />
+        <option value="$PROJECT_DIR$/notification-service/pom.xml" />
       </list>
     </option>
   </component>

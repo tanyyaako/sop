@@ -1,24 +1,38 @@
-# Используем легковесный образ JRE 17 на базе Alpine Linux
+FROM maven:3.9-eclipse-temurin-17 AS build
+WORKDIR /app
+COPY pom.xml .
+COPY lib/events-roomBooking-contract.jar /tmp/events-roomBooking-contract.jar
+COPY lib/hotelBooking-api.jar /tmp/hotelBooking-api.jar
+RUN if [ -f /tmp/events-roomBooking-contract.jar ]; then \
+        mvn install:install-file \
+            -Dfile=/tmp/events-roomBooking-contract.jar \
+            -DgroupId=org.example \
+            -DartifactId=events-roomBooking-contract \
+            -Dversion=1.0-SNAPSHOT \
+            -Dpackaging=jar || true; \
+    fi
+RUN if [ -f /tmp/hotelBooking-api.jar ]; then \
+        mvn install:install-file \
+            -Dfile=/tmp/hotelBooking-api.jar \
+            -DgroupId=org.example \
+            -DartifactId=hotelBooking-api \
+            -Dversion=0.0.1-SNAPSHOT \
+            -Dpackaging=jar || true; \
+    fi
+
+COPY src ./src
+RUN mvn clean package -DskipTests
+
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
-# Создаем пользователя 'javauser', чтобы не запускать приложение от root (Security Best Practice)
 RUN addgroup -S javauser && adduser -S javauser -G javauser
 
-# Аргумент для поиска JAR файла.
-# Используем wildcard, так как .original файлы исключены через .dockerignore
-# Так как мы сделали mvn clean package, в папке target будет лежать нужный нам fat-jar.
-ARG JAR_FILE=target/*.jar
+COPY --from=build /app/target/*.jar app.jar
 
-# Копируем JAR внутрь образа под именем app.jar
-COPY --chown=javauser:javauser ${JAR_FILE} app.jar
-
-# Переключаемся на пользователя
+RUN chown javauser:javauser /app/app.jar
 USER javauser
 
-# Документируем порт (этот порт должен совпадать с server.port в properties)
 EXPOSE 8081
 
-# Запускаем приложение
-# Использование exec формы ["..."] позволяет корректно передавать сигналы остановки (SIGTERM)
 ENTRYPOINT ["java", "-jar", "app.jar"]

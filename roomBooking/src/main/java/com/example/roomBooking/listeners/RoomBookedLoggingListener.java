@@ -22,20 +22,9 @@ public class RoomBookedLoggingListener {
         )
     )
     public void handleRoomBookedWithPrice(RoomBookedEvent event) {
-        logger.info("=== Room Booked Event with Price (Logging) ===");
-        logger.info("Booking ID: {}", event.bookingId());
-        logger.info("Room ID: {}", event.roomId());
-        logger.info("Hotel ID: {}", event.hotelId());
-        logger.info("User: {} {}", event.userName(), event.userSurname());
-        logger.info("Document: {}", event.documentNumber());
-        logger.info("Date From: {}", event.from());
-        logger.info("Date To: {}", event.to());
-        logger.info("Booked At: {}", event.bookedAt());
-        logger.info("Calculated Price: {} {}", event.price(), event.currency());
-        logger.info("==============================================");
-        
-        // Здесь можно добавить кеширование цены, если нужно
-        // cacheService.cachePrice(event.roomId(), event.price());
+        logger.info("ROOM_BOOKED_EVENT | bookingId={}, roomId={}, hotelId={}, user={} {}, documentNumber={}, dateFrom={}, dateTo={}, bookedAt={}, price={} {}",
+            event.bookingId(), event.roomId(), event.hotelId(), event.userName(), event.userSurname(),
+            event.documentNumber(), event.from(), event.to(), event.bookedAt(), event.price(), event.currency());
     }
 }
 

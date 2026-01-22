@@ -43,23 +43,6 @@ services:
     depends_on:
       - prometheus
 
-  jenkins:
-    build:
-      context: ./jenkins
-      dockerfile: Dockerfile
-    ports:
-      - "8085:8080"
-      - "50000:50000"
-    volumes:
-      - jenkins-data:/var/jenkins_home
-      - /var/run/docker.sock:/var/run/docker.sock
-      - .:/workspace
-    networks:
-      - microservices-net
-    user: root
-    depends_on:
-      - rabbitmq
-
   pricing-service:
     build: ./pricing-service
     image: bookings/pricing-service:latest
@@ -117,7 +100,6 @@ services:
 
 volumes:
   grafana-storage:
-  jenkins-data:
 
 networks:
   microservices-net:

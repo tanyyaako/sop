@@ -17,75 +17,61 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class RoomsEventListener {
     
     private static final Logger log = LoggerFactory.getLogger(RoomsEventListener.class);
+    public static final String ROOM_BOOKED_FANOUT_EXCHANGE = "room-booked-fanout";
     public static final String EXCHANGE_NAME = "rooms-exchange";
-    private static final String QUEUE_NAME = "notification-queue";
+    private static final String ROUTING_KEY_ROOM_UNBOOKED = "room.unbooked";
     private final InMemoryStorage storage;
+    private final Set<Long> processedBookingIds = ConcurrentHashMap.newKeySet();
 
     public RoomsEventListener(InMemoryStorage storage) {
         this.storage = storage;
     }
 
-    @RabbitListener(bindings = @QueueBinding(
-            value = @Queue(
-                    name = QUEUE_NAME,
-                    durable = "true",
-            arguments = {
-                            @Argument(name = "x-dead-letter-exchange", value = "dlx-exchange"),
-                            @Argument(name = "x-dead-letter-routing-key", value = "dlq.notifications")
-            }),
-            exchange = @Exchange(name = EXCHANGE_NAME, type = "topic", durable = "true"),
-            key = "room.booked"
-    ))
+    @RabbitListener(
+        bindings = @QueueBinding(
+            value = @Queue(name = "q.audit.analytics", durable = "true"),
+            exchange = @Exchange(name = ROOM_BOOKED_FANOUT_EXCHANGE, type = "fanout")
+        )
+    )
     public void handleRoomBookedEvent(@Payload RoomBookedEvent event, Channel channel,
                                       @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag) throws IOException {
         try {
             log.info("Received RoomBookedEvent: {}", event);
-            RoomBookedEvent existingEvent = storage.bookRooms.get(event.bookingId());
 
-            if (existingEvent != null) {
-                RoomBookedEvent bookingEvent = new RoomBookedEvent(
-                        event.bookingId(),
-                        event.roomId(),
-                        event.hotelId(),
-                        event.documentNumber(),
-                        event.userName(),
-                        event.userSurname(),
-                        event.from(),
-                        event.to(),
-                        null,
-                        event.price(),
-                        event.currency()
-                );
+            if (!processedBookingIds.add(event.bookingId())) {
+                log.warn("Duplicate event received for bookingId: {}", event.bookingId());
+                channel.basicAck(deliveryTag, false);
+                return;
+            }
 
-                RoomBookedEvent existingWithoutTime = new RoomBookedEvent(
-                        existingEvent.bookingId(),
-                        existingEvent.roomId(),
-                        existingEvent.hotelId(),
-                        existingEvent.documentNumber(),
-                        existingEvent.userName(),
-                        existingEvent.userSurname(),
-                        existingEvent.from(),
-                        existingEvent.to(),
-                        null,
-                        existingEvent.price(),
-                        existingEvent.currency()
-                );
-
-                if (event.userName().equals("1")) {
-                    throw new RuntimeException("Duplicate RoomBookedEvent detected for bookingId: " + event.bookingId());
-                }
+            if (event.documentNumber() == null || event.documentNumber().length() < 5) {
+                throw new IllegalArgumentException(
+                    "Номер документа содержит меньше 5 символов");
             }
 
             storage.bookRooms.put(event.bookingId(), event);
             log.info("Added new bookingEvent with bookingId: {}", event.bookingId());
+            
+            if (isForeigner(event.documentNumber())) {
+                storage.foreignerBookings.put(event.bookingId(), event);
+                log.warn("FOREIGNER BOOKING DETECTED | bookingId={}, roomId={}, hotelId={}, user={} {}, documentNumber={}, dateFrom={}, dateTo={}, bookedAt={}, price={} {}, fullEvent={}",
+                    event.bookingId(), event.roomId(), event.hotelId(), event.userName(), event.userSurname(),
+                    event.documentNumber(), event.from(), event.to(), event.bookedAt(), event.price(), event.currency(), event);
+            }
+            
             channel.basicAck(deliveryTag, false);
         } catch (Exception e){
             log.error("Failed to process event: {}. Sending to DLQ.", event, e);
+            if (event != null && event.bookingId() != null) {
+                processedBookingIds.remove(event.bookingId());
+            }
             channel.basicNack(deliveryTag, false, false);
         }
 
@@ -107,6 +93,8 @@ public class RoomsEventListener {
         try {
             log.info("Received RoomUnbookedEvent: {}", event);
             storage.bookRooms.remove(event.bookingId());
+            storage.foreignerBookings.remove(event.bookingId());
+            processedBookingIds.remove(event.bookingId());
             log.info("Successfully removed booking with bookingId: {}", event.bookingId());
             channel.basicAck(deliveryTag, false);
         } catch (Exception e) {
@@ -115,60 +103,21 @@ public class RoomsEventListener {
         }
     }
 
-    @RabbitListener(
-            bindings = @QueueBinding(
-                    value = @Queue(name = "notification-queue.dlq", durable = "true"),
-                    exchange = @Exchange(name = "dlx-exchange", type = "topic", durable = "true"),
-                    key = "dlq.notifications"
-            )
-    )
-    public void handleDlqMessages(Message failedMessage) {
-        MessageProperties properties = failedMessage.getMessageProperties();
-
-        String exceptionMessage = (String) properties.getHeader("x-exception-message");
-        String stackTrace = (String) properties.getHeader("x-exception-stack-trace");
-        String originalExchange = properties.getReceivedExchange();
-        String originalRoutingKey = properties.getReceivedRoutingKey();
-        List<Map<String, ?>> deathInfo = properties.getXDeathHeader();
-
-        log.error("""
-        !!! Received message in DLQ:
-        Original exchange: {}
-        Original routing key: {}
-        Exception: {}
-        Stack trace: {}
-        Message body: {}
-        Death info: {}
-        """,
-                originalExchange,
-                originalRoutingKey,
-                exceptionMessage,
-                stackTrace,
-                new String(failedMessage.getBody()),
-                deathInfo
-        );
+    private boolean isForeigner(String documentNumber) {
+        if (documentNumber == null || documentNumber.isEmpty()) {
+            return false;
+        }
+        return !documentNumber.matches("\\d{10}");
     }
-    
+
     @RabbitListener(
         bindings = @QueueBinding(
-            value = @Queue(name = "q.audit-booking-service.analytics", durable = "true"),
-            exchange = @Exchange(name = "room-booked-fanout", type = "fanout")
+            value = @Queue(name = "notification-queue.dlq", durable = "true"),
+            exchange = @Exchange(name = "dlx-exchange", type = "topic", durable = "true"),
+            key = "dlq.notifications"
         )
     )
-    public void handleRoomBookedWithPrice(@Payload RoomBookedEvent event) {
-        log.info("=== Room Booked Event with Price (Audit/Notification) ===");
-        log.info("Booking ID: {}", event.bookingId());
-        log.info("Room ID: {}", event.roomId());
-        log.info("Hotel ID: {}", event.hotelId());
-        log.info("User: {} {}", event.userName(), event.userSurname());
-        log.info("Document: {}", event.documentNumber());
-        log.info("Date From: {}", event.from());
-        log.info("Date To: {}", event.to());
-        log.info("Booked At: {}", event.bookedAt());
-        log.info("Calculated Price: {} {}", event.price(), event.currency());
-        log.info("==========================================================");
-        
-        // Здесь можно добавить отправку уведомления
-        // notificationService.sendNotification("Room booked with price: " + event.price() + " " + event.currency());
+    public void handleDlqMessages(@Payload Object failedMessage) {
+        log.error("!!! Received message in DLQ: {}", failedMessage);
     }
 }
